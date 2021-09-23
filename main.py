@@ -13,9 +13,21 @@ import pickle
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+    resized = QtCore.pyqtSignal()
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super(QMainWindow, self).resizeEvent(event)
+
+    def on_window_resized(self):
+        # self.player.pause()
+        pass
+
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
         self.setupUi(self)
+
+        self.resized.connect(self.on_window_resized)
 
         self.pushButton_fast_left.setIcon(QtGui.QIcon('img/fast_play_left.png'))
         self.pushButton_left.setIcon(QtGui.QIcon('img/play_left.png'))
@@ -44,6 +56,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionFile.triggered.connect(self.clicked_file)
         self.actionOutput_Dir.triggered.connect(self.clicked_output_dir)
 
+        # self.image_view.setScaledContents(True)
+        self.image_view.mousePressEvent = self.on_image_view_mouse_pressed
+        self.image_view.setMinimumSize(1, 1)
+
         self.output_dir = None
         self.player = Player(self.image_view, self.video_time_slider, self.video_time_label)
         self.player.start()
@@ -54,6 +70,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.load_video(last_video_file_name)
         except:
             pass
+
+    def on_image_view_mouse_pressed(self, _):
+        self.player.toggle()
 
     def keyPressEvent(self, event):
         # if not event.isAutoRepeat():
@@ -151,13 +170,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return dialog.selectedFiles()
 
     def load_video(self, file_name):
-        self.player.load_video(file_name)
-        with open(r"__last_video.pickle", "wb") as save_file:
-            pickle.dump(file_name, save_file)
+        if self.player.load_video(file_name):
+            with open(r"__last_video.pickle", "wb") as save_file:
+                pickle.dump(file_name, save_file)
 
     def clicked_output_dir(self):
         dir_name = self.select_dir()
-        if os.path.isdir(dir_name):
+        if dir_name is not None and os.path.isdir(dir_name):
             self.output_dir = dir_name
 
     def select_dir(self):

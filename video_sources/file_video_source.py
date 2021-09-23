@@ -108,7 +108,8 @@ class FileVideoSource():
         cur_sec = self.get_current_frame_index() / self.fps
         return f"{self.get_time_formatted(cur_sec)}{self.time_text_suffix}"
 
-    def get_time_formatted(self, seconds):
+    @staticmethod
+    def get_time_formatted(seconds):
         s, ms = divmod(seconds * 1000, 1000)
         if s < 3600:
             return '{}.{}'.format(time.strftime('%M:%S', time.gmtime(s)), "{0:02d}".format(int(ms / 10)))
