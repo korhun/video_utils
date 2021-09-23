@@ -151,9 +151,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         with open(r"__last_video.pickle", "wb") as save_file:
             pickle.dump(file_name, save_file)
 
-    def play_right(self):
-        self.player.play_right()
-
 
 if __name__ == "__main__":
     import sys

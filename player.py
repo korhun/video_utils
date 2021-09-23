@@ -18,6 +18,7 @@ class Player(QtCore.QThread):
         self.video_time_label = video_time_label
         self.video_source = None
         self.reversed = False
+        self.last_skip = 0
         self.skip = -1
         self.goto_frame_index = -1
         QtCore.QThread.__init__(self)
@@ -70,42 +71,40 @@ class Player(QtCore.QThread):
         self.goto_frame_index = self.video_source.get_current_frame_index() - (5 * (skip + 1) + 1 if self.slow_motion else skip + 1)
 
     def play_left_fast(self, forced=False):
-
         if not forced and self.skip > 0 and self.reversed:
-            self.skip = -1
+            self.pause()
         else:
             self.reversed = True
             self.skip = 5
 
     def play_left(self, forced=False):
         if not forced and self.skip == 0 and self.reversed:
-            self.skip = -1
+            self.pause()
         else:
             self.reversed = True
             self.skip = 0
 
     def pause(self):
-        self.skip = -1
+        if self.skip != -1:
+            self.last_skip = self.skip
+            self.skip = -1
 
     def toggle(self):
         if self.skip == -1:
-            if self.reversed:
-                self.play_left(True)
-            else:
-                self.play_right(True)
+            self.skip = self.last_skip
         else:
             self.pause()
 
     def play_right(self, forced=False):
         if not forced and self.skip == 0 and not self.reversed:
-            self.skip = -1
+            self.pause()
         else:
             self.reversed = False
             self.skip = 0
 
     def play_right_fast(self, forced=False):
         if not forced and self.skip > 0 and not self.reversed:
-            self.skip = -1
+            self.pause()
         else:
             self.reversed = False
             self.skip = 5
@@ -114,13 +113,13 @@ class Player(QtCore.QThread):
         prev = 0
         while True:
             try:
-                self.video_time_label.setText(self.video_source.get_time_text())
                 if self.goto_frame_index >= 0:
                     ok, frame = self.video_source.goto(self.goto_frame_index)
                     if ok:
                         image = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
                         self.image_view.setPixmap(QtGui.QPixmap.fromImage(image))
                         self.video_time_slider.setValue(self.video_source.get_current_frame_index())
+                        self.video_time_label.setText(self.video_source.get_time_text())
                     self.goto_frame_index = -1
                 elif self.skip >= 0:
                     time_elapsed = time.time() - prev
@@ -142,5 +141,6 @@ class Player(QtCore.QThread):
                             # self.image_view.setPixmap(pixmap)
 
                             self.video_time_slider.setValue(self.video_source.get_current_frame_index())
+                            self.video_time_label.setText(self.video_source.get_time_text())
             except:
                 self.pause()
