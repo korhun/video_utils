@@ -1,4 +1,6 @@
 import os
+import time
+
 import cv2
 
 from video_sources.video_source import VideoSource
@@ -96,6 +98,15 @@ class FileVideoSource():
         self.__capture = cv2.VideoCapture(self.__video_path)
         self.fps = self.__capture.get(cv2.CAP_PROP_FPS)
         self.frame_count = self.__capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.time_text_suffix = f" / {self.get_time_formatted(int(self.frame_count / self.fps))}"
 
     def get_current_frame_index(self):
         return self.__capture.get(cv2.CAP_PROP_POS_FRAMES)-1
+
+    def get_time_text(self):
+        cur_sec = int(self.get_current_frame_index() / self.fps)
+        return f"{self.get_time_formatted(cur_sec)}{self.time_text_suffix}"
+
+    def get_time_formatted(self, seconds):
+        # return time.strftime('%H:%M:%S', time.gmtime(seconds))
+        return time.strftime('%M:%S', time.gmtime(seconds))
