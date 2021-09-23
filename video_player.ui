@@ -247,22 +247,6 @@
     </item>
     <item row="2" column="6">
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="3">
-       <widget class="QLabel" name="video_time_label">
-        <property name="font">
-         <font>
-          <family>Cascadia Code</family>
-          <pointsize>16</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>0:00 / 0:00</string>
-        </property>
-        <property name="margin">
-         <number>8</number>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBox_speed">
         <property name="minimumSize">
@@ -291,7 +275,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
+      <item row="0" column="3">
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -307,7 +291,7 @@
         </property>
        </spacer>
       </item>
-      <item row="0" column="4">
+      <item row="0" column="5">
        <widget class="QPushButton" name="pushButton_save">
         <property name="minimumSize">
          <size>
@@ -325,7 +309,7 @@
          <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
-         <string>Save Current Image (CTRL+S)</string>
+         <string>Save Current Image (Ctrl+S)</string>
         </property>
         <property name="text">
          <string/>
@@ -341,6 +325,56 @@
         </property>
         <property name="flat">
          <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="video_time_label">
+        <property name="font">
+         <font>
+          <family>Cascadia Code</family>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>0:00 / 0:00</string>
+        </property>
+        <property name="margin">
+         <number>8</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QPushButton" name="pushButton_output_dir">
+        <property name="minimumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Output Dir (Ctrl+D)</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+D</string>
         </property>
        </widget>
       </item>

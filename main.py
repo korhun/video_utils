@@ -23,6 +23,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_right.setIcon(QtGui.QIcon('img/play_right.png'))
         self.pushButton_fast_right.setIcon(QtGui.QIcon('img/fast_play_right.png'))
         self.pushButton_save.setIcon(QtGui.QIcon('img/save.png'))
+        self.pushButton_output_dir.setIcon(QtGui.QIcon('img/folder.png'))
 
         self.comboBox_speed.addItem("0.25")
         self.comboBox_speed.addItem("0.5")
@@ -41,7 +42,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_fast_right.clicked.connect(self.clicked_fast_right)
 
         self.actionFile.triggered.connect(self.clicked_file)
+        self.actionOutput_Dir.triggered.connect(self.clicked_output_dir)
 
+        self.output_dir = None
         self.player = Player(self.image_view, self.video_time_slider, self.video_time_label)
         self.player.start()
         try:
@@ -100,14 +103,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # elif e.key() == Qt.Key_Space:
         #     self.player.toggle()
 
-        elif e.key() == Qt.Key_Left:
-            self.player.play_previous_frame()
-        elif e.key() == Qt.Key_Right:
-            self.player.play_next_frame()
-        elif e.key() == Qt.Key_Down:
-            self.player.play_previous_frame(5)
-        elif e.key() == Qt.Key_Up:
-            self.player.play_next_frame(5)
+        # elif e.key() == Qt.Key_Left:
+        #     self.player.play_previous_frame()
+        # elif e.key() == Qt.Key_Right:
+        #     self.player.play_next_frame()
+        # elif e.key() == Qt.Key_Down:
+        #     self.player.play_previous_frame(5)
+        # elif e.key() == Qt.Key_Up:
+        #     self.player.play_next_frame(5)
 
     def clicked_fast_left(self):
         self.player.play_left_fast()
@@ -130,6 +133,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.load_video(file_names[0])
 
     def select_file(self):
+        self.player.pause()
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.AnyFile)
         dialog.setWindowTitle('Open Video File')
@@ -150,6 +154,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.player.load_video(file_name)
         with open(r"__last_video.pickle", "wb") as save_file:
             pickle.dump(file_name, save_file)
+
+    def clicked_output_dir(self):
+        dir_name = self.select_dir()
+        if os.path.isdir(dir_name):
+            self.output_dir = dir_name
+
+    def select_dir(self):
+        self.player.pause()
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        dialog.setWindowTitle('Select Output Directory')
+        try:
+            with open(r"__last_out_dir.pickle", "rb") as load_file:
+                dialog.setDirectory(pickle.load(load_file))
+        except:
+            pass
+        if dialog.exec_():
+            dir_name = dialog.directory().dirName()
+            with open(r"__last_out_dir.pickle", "wb") as save_file:
+                pickle.dump(dir_name, save_file)
+            return dir_name
 
 
 if __name__ == "__main__":
