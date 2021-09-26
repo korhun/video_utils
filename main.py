@@ -1,15 +1,13 @@
 import os
-import time
 
+import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QDir
+from PyQt5.QtCore import Qt, QDir, QSettings, QSize, QPoint
 from PyQt5.QtWidgets import QFileDialog, QMainWindow
 
 from player import Player
+from utils import image_helper
 from video_player import Ui_MainWindow
-from video_sources.file_video_source import FileVideoSource
-import pickle
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -19,15 +17,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.resized.emit()
         return super(QMainWindow, self).resizeEvent(event)
 
-    def on_window_resized(self):
-        # self.player.pause()
-        pass
+    # def on_window_resized(self):
+    #     pass
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
         self.setupUi(self)
 
-        self.resized.connect(self.on_window_resized)
+        # self.resized.connect(self.on_window_resized)
 
         self.pushButton_fast_left.setIcon(QtGui.QIcon('img/fast_play_left.png'))
         self.pushButton_left.setIcon(QtGui.QIcon('img/play_left.png'))
@@ -46,6 +43,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_speed.addItem("1.75")
         self.comboBox_speed.addItem("2")
         self.comboBox_speed.setCurrentIndex(3)
+        self.comboBox_speed.activated[str].connect(self.on_comboBox_speed_changed)
 
         self.pushButton_fast_left.clicked.connect(self.clicked_fast_left)
         self.pushButton_left.clicked.connect(self.clicked_left)
@@ -61,15 +59,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.image_view.setMinimumSize(1, 1)
 
         self.output_dir = None
-        self.player = Player(self.image_view, self.video_time_slider, self.video_time_label)
+        self.player = Player(self, self.video_time_slider)
+        self.player.list_of_dict_signals.connect(self._load_frame)
         self.player.start()
-        try:
-            with open(r"__last_video.pickle", "rb") as last_video:
-                last_video_file_name = pickle.load(last_video)
-                if os.path.isfile(last_video_file_name):
-                    self.load_video(last_video_file_name)
-        except:
-            pass
+
+        self.just_loaded = 0
+
+        self.settings = QSettings(QSettings.IniFormat, QSettings.SystemScope, 'Orientis', 'video_player')
+        last_video = self.settings.value("last_video", "")
+        if os.path.isfile(last_video):
+            self.load_video(last_video)
+
+        self.settings.setFallbacksEnabled(False)  # File only, not registry
+        self.resize(self.settings.value("size", QSize(800, 800)))
+        self.move(self.settings.value("pos", QPoint(200, 200)))
+
+    def closeEvent(self, e):
+        self.player.running = False
+        self.settings.setValue("size", self.size())
+        self.settings.setValue("pos", self.pos())
+
+    def on_comboBox_speed_changed(self, text):
+        if text == "Normal":
+            self.player.speed = 1
+        else:
+            self.player.speed = float(text)
 
     def on_image_view_mouse_pressed(self, _):
         self.player.toggle()
@@ -158,42 +172,55 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dialog.setWindowTitle('Open Video File')
         # dialog.setNameFilter('Video Fle (*.mov *.avi *.mp4)')
         # dialog.setFilter(QDir.Files)
-        try:
-            with open(r"__last_dir.pickle", "rb") as load_file:
-                dialog.setDirectory(pickle.load(load_file))
-        except:
-            pass
+        last_dir = self.settings.value("last_dir", "")
+        if os.path.isdir(last_dir):
+            dialog.setDirectory(last_dir)
         if dialog.exec_():
-            dir_name = dialog.directory().dirName()
-            with open(r"__last_dir.pickle", "wb") as save_file:
-                pickle.dump(dir_name, save_file)
+            dir_name = dialog.directory().absolutePath()
+            self.settings.setValue("last_dir", dir_name)
             return dialog.selectedFiles()
 
     def load_video(self, file_name):
         if self.player.load_video(file_name):
-            with open(r"__last_video.pickle", "wb") as save_file:
-                pickle.dump(file_name, save_file)
+            self.just_loaded = 1
+            self.settings.setValue("last_video", file_name)
 
     def clicked_output_dir(self):
-        dir_name = self.select_dir()
+        dir_name = self.select_out_dir()
         if dir_name is not None and os.path.isdir(dir_name):
             self.output_dir = dir_name
 
-    def select_dir(self):
+    def select_out_dir(self):
         self.player.pause()
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         dialog.setWindowTitle('Select Output Directory')
-        try:
-            with open(r"__last_out_dir.pickle", "rb") as load_file:
-                dialog.setDirectory(pickle.load(load_file))
-        except:
-            pass
+        last_out_dir = self.settings.value("last_out_dir", "")
+        if os.path.isdir(last_out_dir):
+            dialog.setDirectory(last_out_dir)
         if dialog.exec_():
-            dir_name = dialog.directory().dirName()
-            with open(r"__last_out_dir.pickle", "wb") as save_file:
-                pickle.dump(dir_name, save_file)
+            dir_name = dialog.directory().absolutePath()
+            self.settings.setValue("last_out_dir", dir_name)
             return dir_name
+
+    def _load_frame(self, frame, current_frame_index, time_text):
+        w, h = self.image_view.width(), self.image_view.height()
+        if self.just_loaded == 1:
+            self.just_loaded = 2
+            w, h = frame.shape[1], frame.shape[0]
+            self.image_view.setMinimumSize(w, h)
+        elif self.just_loaded == 2:
+            self.just_loaded = 0
+            self.image_view.setMinimumSize(1, 1)
+
+        h1, w1 = frame.shape[:2]
+        image = QtGui.QImage(frame.data, w1, h1, QtGui.QImage.Format_BGR888)
+        pixmap = QtGui.QPixmap.fromImage(image)
+        pixmap = pixmap.scaled(w, h, QtCore.Qt.KeepAspectRatio)
+        self.image_view.setPixmap(pixmap)
+
+        self.video_time_slider.setValue(current_frame_index)
+        self.video_time_label.setText(time_text)
 
 
 if __name__ == "__main__":
