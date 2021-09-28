@@ -7,9 +7,6 @@ import uuid
 from typing import AnyStr, Tuple
 from shutil import copyfile
 
-# from ndu_gate_camera.utility import string_helper
-# from ndu_gate_camera.utility.ndu_utility import NDUUtility
-import string_helper
 
 
 def read_lines(filename, encoding="utf-8"):

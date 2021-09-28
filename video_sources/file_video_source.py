@@ -102,7 +102,7 @@ class FileVideoSource():
         self.time_text_suffix = f" / {self.get_time_formatted(self.frame_count / self.fps)}"
 
     def get_current_frame_index(self):
-        return self.__capture.get(cv2.CAP_PROP_POS_FRAMES) - 1
+        return int(self.__capture.get(cv2.CAP_PROP_POS_FRAMES) - 1)
 
     def get_time_text(self):
         cur_sec = self.get_current_frame_index() / self.fps

@@ -4,134 +4,154 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="video_player.py" line="181"/>
-        <source>Video</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="video_player.py" line="190"/>
+        <location filename="video_player.py" line="237"/>
         <source>&amp;Open</source>
-        <translation type="unfinished">&amp;Aç</translation>
+        <translation>&amp;Aç</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="191"/>
+        <location filename="video_player.py" line="238"/>
         <source>&amp;Save</source>
-        <translation type="unfinished">&amp;Kaydet</translation>
+        <translation>&amp;Kaydet</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="193"/>
+        <location filename="video_player.py" line="240"/>
         <source>&amp;File</source>
-        <translation type="unfinished">&amp;Dosya</translation>
+        <translation>&amp;Dosya</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="195"/>
+        <location filename="video_player.py" line="242"/>
         <source>&amp;Url</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="196"/>
+        <location filename="video_player.py" line="243"/>
         <source>&amp;YouTube</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="197"/>
+        <location filename="video_player.py" line="244"/>
         <source>&amp;Cam</source>
-        <translation type="unfinished">&amp;Kamera</translation>
+        <translation>&amp;Kamera</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="198"/>
+        <location filename="video_player.py" line="245"/>
         <source>Output Dir</source>
-        <translation type="unfinished">Çıktı Dizini</translation>
+        <translation>Çıktı Dizini</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="194"/>
+        <location filename="video_player.py" line="241"/>
         <source>Ctrl+O</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+O</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="200"/>
+        <location filename="video_player.py" line="247"/>
         <source>Save Current Image</source>
-        <translation type="unfinished">Aktif Görüntüyü Kaydet</translation>
+        <translation>Aktif Görüntüyü Kaydet</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="201"/>
+        <location filename="video_player.py" line="248"/>
         <source>Ctrl+S</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+S</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="202"/>
+        <location filename="video_player.py" line="249"/>
         <source>Save All Frames</source>
-        <translation type="unfinished">Tüm Görüntüleri Kaydet</translation>
+        <translation>Tüm Görüntüleri Kaydet</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="203"/>
+        <location filename="video_player.py" line="250"/>
         <source>Ctrl+Shift+S</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+Shift+S</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="204"/>
+        <location filename="video_player.py" line="251"/>
         <source>&amp;Exit</source>
-        <translation type="unfinished">&amp;Çıkış</translation>
+        <translation>&amp;Çıkış</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="205"/>
+        <location filename="video_player.py" line="252"/>
         <source>Exit</source>
-        <translation type="unfinished">Çıkış</translation>
+        <translation>Çıkış</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="182"/>
+        <location filename="video_player.py" line="236"/>
         <source>NUM 6</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="183"/>
+        <location filename="video_player.py" line="235"/>
         <source>NUM 4</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="184"/>
+        <location filename="video_player.py" line="233"/>
         <source>NUM 7</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="185"/>
+        <location filename="video_player.py" line="234"/>
         <source>NUM 5</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="186"/>
+        <location filename="video_player.py" line="232"/>
         <source>NUM 9</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="video_player.py" line="187"/>
+        <location filename="video_player.py" line="231"/>
         <source>0:00 / 0:00</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="video_player.py" line="188"/>
         <source>Save Current Image (CTRL+S)</source>
-        <translation type="unfinished">Aktif Görüntüyü Kaydet (CTRL+S)</translation>
+        <translation type="obsolete">Aktif Görüntüyü Kaydet (CTRL+S)</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="192"/>
+        <location filename="video_player.py" line="239"/>
         <source>Help</source>
-        <translation type="unfinished">Yardım</translation>
+        <translation>Yardım</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="199"/>
+        <location filename="video_player.py" line="246"/>
         <source>Ctrl+D</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+D</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="206"/>
+        <location filename="video_player.py" line="254"/>
         <source>Controls</source>
-        <translation type="unfinished">Kontroller</translation>
+        <translation>Kontroller</translation>
     </message>
     <message>
-        <location filename="video_player.py" line="207"/>
+        <location filename="video_player.py" line="255"/>
         <source>About</source>
-        <translation type="unfinished">Hakkında</translation>
+        <translation>Hakkında</translation>
+    </message>
+    <message>
+        <location filename="video_player.py" line="226"/>
+        <source>Orientis</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="video_player.py" line="227"/>
+        <source>Output Dir (Ctrl+D)</source>
+        <translation>Çıktı Dizini (Ctrl+D)</translation>
+    </message>
+    <message>
+        <location filename="video_player.py" line="229"/>
+        <source>Save Current Image (Ctrl+S)</source>
+        <translation>Aktif Görüntüyü Kaydet (Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="video_player.py" line="230"/>
+        <source>Ctrl+Q</source>
+        <translation>Ctrl+Q</translation>
+    </message>
+    <message>
+        <location filename="video_player.py" line="253"/>
+        <source>Ctrl+F4</source>
+        <translation>Ctrl+F4</translation>
     </message>
 </context>
 </TS>
