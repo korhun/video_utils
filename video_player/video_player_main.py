@@ -61,7 +61,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionSave_Current.triggered.connect(self.save_current_frame)
         self.pushButton_save.clicked.connect(self.save_current_frame)
 
-
         # self.image_view.setScaledContents(True)
         self.image_view.mousePressEvent = self.on_image_view_mouse_pressed
         self.image_view.setMinimumSize(1, 1)
@@ -221,6 +220,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.video_time_slider.setValue(current_frame_index)
         self.video_time_label.setText(time_text)
+
+
+def show_video_player():
+    import sys
+
+    app = QtWidgets.QApplication(sys.argv)
+
+    translator = QtCore.QTranslator()
+    translator.load("video_player-tr.qm")
+    app.installTranslator(translator)
+
+    win = MainWindow()
+    win.setWindowIcon(QtGui.QIcon("img/video.png"))
+    win.show()
 
 
 if __name__ == "__main__":

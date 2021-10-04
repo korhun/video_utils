@@ -4,7 +4,7 @@ import time
 
 import cv2
 
-from video_sources.video_source import VideoSource
+# from video_sources.video_source import VideoSource
 
 
 # class FileVideoSource(VideoSource):
