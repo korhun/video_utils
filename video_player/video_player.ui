@@ -6,51 +6,80 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1270</width>
-    <height>998</height>
+    <width>1157</width>
+    <height>1019</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>1</horstretch>
+    <verstretch>1</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
-   <string>Orientis</string>
+   <string>orientis-video</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0" colspan="6">
-     <widget class="QSlider" name="video_time_slider">
-      <property name="focusPolicy">
-       <enum>Qt::NoFocus</enum>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0" colspan="6">
-     <widget class="QLabel" name="image_view">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::ClickFocus</enum>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(47, 47, 47);</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="4" colspan="2">
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="5">
-       <widget class="QPushButton" name="pushButton_output_dir">
+    <item row="2" column="0" colspan="3">
+     <layout class="QGridLayout" name="gridLayout_main">
+      <item row="3" column="3">
+       <widget class="QPushButton" name="pushButton_left">
+        <property name="minimumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>NUM 4</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <activeon>:/icons/img/play_left.png</activeon>
+         </iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="7">
+       <widget class="QWidget" name="widget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>9</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>9</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="13">
+       <widget class="QPushButton" name="pushButton_save_and_edit">
         <property name="minimumSize">
          <size>
           <width>66</width>
@@ -67,7 +96,7 @@
          <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
-         <string>Output Dir (Ctrl+D)</string>
+         <string>Save Current Image and Edit (Ctrl+E)</string>
         </property>
         <property name="text">
          <string/>
@@ -79,11 +108,50 @@
          </size>
         </property>
         <property name="shortcut">
-         <string>Ctrl+D</string>
+         <string>Ctrl+E</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="6">
+      <item row="3" column="5">
+       <widget class="QPushButton" name="pushButton_right">
+        <property name="minimumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>45</width>
+          <height>45</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>NUM 6</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <activeon>:/icons/img/play_right.png</activeon>
+         </iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="12">
        <widget class="QPushButton" name="pushButton_save">
         <property name="minimumSize">
          <size>
@@ -120,7 +188,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="4">
+      <item row="3" column="10">
        <widget class="QLabel" name="video_time_label">
         <property name="font">
          <font>
@@ -136,53 +204,41 @@
         </property>
        </widget>
       </item>
-     </layout>
-    </item>
-    <item row="2" column="3">
-     <widget class="Line" name="line">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>55</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>55</height>
-       </size>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <layout class="QGridLayout" name="gridLayout_5">
-      <property name="spacing">
-       <number>6</number>
-      </property>
-      <item row="0" column="1">
-       <widget class="QWidget" name="widget" native="true">
+      <item row="3" column="11">
+       <widget class="QPushButton" name="pushButton_output_dir">
         <property name="minimumSize">
          <size>
-          <width>100</width>
-          <height>0</height>
+          <width>66</width>
+          <height>66</height>
          </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>66</width>
+          <height>66</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Output Dir (Ctrl+D)</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>50</width>
+          <height>50</height>
+         </size>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+D</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="7">
-       <widget class="QWidget" name="widget_2" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>100</width>
-          <height>0</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="6">
+      <item row="3" column="6">
        <widget class="QPushButton" name="pushButton_fast_right">
         <property name="minimumSize">
          <size>
@@ -224,23 +280,73 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1" colspan="7">
-       <widget class="QSlider" name="video_speed_slider">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::NoFocus</enum>
-        </property>
+      <item row="3" column="9">
+       <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDial" name="speed_dial">
+        <property name="minimumSize">
+         <size>
+          <width>122</width>
+          <height>111</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>122</width>
+          <height>111</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>122</width>
+          <height>111</height>
+         </size>
+        </property>
        </widget>
       </item>
-      <item row="0" column="2">
+      <item row="3" column="8">
+       <widget class="QDoubleSpinBox" name="speed_spin_box">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>35</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Cascadia Code</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="minimum">
+         <double>-999.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>999.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
        <widget class="QPushButton" name="pushButton_fast_left">
         <property name="minimumSize">
          <size>
@@ -279,31 +385,40 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="8">
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+      <item row="0" column="1" colspan="13">
+       <widget class="QLabel" name="image_view">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
         </property>
-       </spacer>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(47, 47, 47);</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
       </item>
-      <item row="0" column="4">
+      <item row="3" column="4">
        <widget class="QPushButton" name="pushButton_pause">
         <property name="minimumSize">
          <size>
-          <width>45</width>
-          <height>45</height>
+          <width>66</width>
+          <height>66</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>45</width>
-          <height>45</height>
+          <width>66</width>
+          <height>66</height>
          </size>
         </property>
         <property name="focusPolicy">
@@ -322,8 +437,8 @@
         </property>
         <property name="iconSize">
          <size>
-          <width>30</width>
-          <height>30</height>
+          <width>50</width>
+          <height>50</height>
          </size>
         </property>
         <property name="default">
@@ -334,128 +449,10 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="3">
-       <widget class="QPushButton" name="pushButton_left">
-        <property name="minimumSize">
-         <size>
-          <width>45</width>
-          <height>45</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>45</width>
-          <height>45</height>
-         </size>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::NoFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>NUM 4</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <activeon>:/icons/img/play_left.png</activeon>
-         </iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>30</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="flat">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <spacer name="horizontalSpacer">
+      <item row="1" column="1" colspan="13">
+       <widget class="QSlider" name="video_time_slider">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::MinimumExpanding</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="5">
-       <widget class="QPushButton" name="pushButton_right">
-        <property name="minimumSize">
-         <size>
-          <width>45</width>
-          <height>45</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>45</width>
-          <height>45</height>
-         </size>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::NoFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>NUM 6</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <activeon>:/icons/img/play_right.png</activeon>
-         </iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>30</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="flat">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="8">
-       <widget class="QDoubleSpinBox" name="speed_spin_box">
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>999</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <family>Cascadia Code</family>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-        <property name="minimum">
-         <double>-999.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>999.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.250000000000000</double>
         </property>
        </widget>
       </item>
@@ -468,8 +465,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1270</width>
-     <height>21</height>
+     <width>1157</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

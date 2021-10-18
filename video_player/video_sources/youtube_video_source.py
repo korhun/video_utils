@@ -38,7 +38,6 @@ class YoutubeVideoSource(VideoSource):
     def get_frames(self):
         log.debug("start video streaming..")
         count = 0
-        # TODO - bitince başa sar?
         self.__stream.start()
         try:
             while True:

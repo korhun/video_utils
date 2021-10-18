@@ -15,7 +15,6 @@ class ImageVideoSource(VideoSource):
             raise ValueError("Image file path is empty")
 
         if path.isfile(image_path) is False:
-            # TODO - get default installation path using OS
             image_path = file_helper.path_join(source_config.get("data_folder", "var/lib/ndu_gate_camera/data/".replace('/', path.sep)), image_path)
             if path.isfile(image_path) is False:
                 dir_name = image_path[:image_path.rfind(path.sep)]
@@ -55,5 +54,4 @@ class ImageVideoSource(VideoSource):
         pass
 
     def stop(self):
-        # TODO
         pass

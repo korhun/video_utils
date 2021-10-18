@@ -57,11 +57,9 @@ class IPCameraVideoSource(VideoSource):
         self._set_capture()
 
     def stop(self):
-        # TODO
         pass
 
     def _set_capture(self):
-        # TODO - https://www.pyimagesearch.com/2019/04/15/live-video-streaming-over-network-with-opencv-and-imagezmq/
         try:
             self.__capture = cv2.VideoCapture(self.__video_url)
         except Exception as exp:

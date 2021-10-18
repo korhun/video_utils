@@ -1,8 +1,6 @@
 import numpy as np
 import cv2
 
-from ndu_gate_camera.api.video_source import VideoSource, log
-from ndu_gate_camera.utility.ndu_utility import NDUUtility
 
 # try:
 #     from picamera import PiCamera

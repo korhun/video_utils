@@ -1,3 +1,4 @@
+from fnmatch import fnmatch
 import codecs
 import io
 import os
@@ -6,7 +7,6 @@ import shutil
 import uuid
 from typing import AnyStr, Tuple
 from shutil import copyfile
-
 
 
 def read_lines(filename, encoding="utf-8"):
@@ -47,7 +47,7 @@ def enumerate_files(dir_path, recursive=False, wildcard_pattern=None, case_insen
         for root, sub_dirs, files in os.walk(dir_path):
             for name in files:
                 # name = os.path.basename(fn)
-                if string_helper.wildcard(name, wildcard_pattern, case_insensitive=case_insensitive):
+                if wildcard(name, wildcard_pattern, case_insensitive=case_insensitive):
                     yield path_join(root, name)
             if not recursive:
                 break
@@ -105,3 +105,33 @@ def get_unique_file_name():
 
 def delete_dir(path_to_dir):
     shutil.rmtree(path_to_dir)
+
+
+def wildcard(txt, pattern, case_insensitive=True):
+    if txt == pattern:
+        return True
+    else:
+        return fnmatch(txt.lower(), pattern.lower()) if case_insensitive else fnmatch(txt, pattern)
+
+
+def wildcard_match_count(list_txt, pattern, case_insensitive=True):
+    count = 0
+    for txt in list_txt:
+        if wildcard(txt, pattern, case_insensitive):
+            count += 1
+    return count
+
+
+def wildcard_has_match(list_txt, pattern, case_insensitive=True):
+    for txt in list_txt:
+        if wildcard(txt, pattern, case_insensitive):
+            return True
+    return False
+
+
+def equals_case_insensitive(string1, string2):
+    return string1.lower() == string2.lower()
+
+
+def join(list_of_string, separator):
+    return separator.join(list_of_string)

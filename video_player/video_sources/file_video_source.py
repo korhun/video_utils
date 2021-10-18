@@ -70,7 +70,7 @@ class FileVideoSource():
     def previous(self, skip=0):
         if self.__capture.isOpened():
             if skip > 0:
-                return self.goto(self.get_current_frame_index() - skip - 1)
+                return self.goto(self.get_current_frame_index() - skip)
             else:
                 next_frame = self.__capture.get(cv2.CAP_PROP_POS_FRAMES)
                 current_frame = next_frame - 1
