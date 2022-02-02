@@ -1,17 +1,19 @@
-import datetime
 import os
 import time
 
 import cv2
 
-# from video_sources.video_source import VideoSource
+if __package__ is None or __package__ == '':
+    from video_source import VideoSource
+else:
+    from .video_source import VideoSource
 
 
-# class FileVideoSource(VideoSource):
-class FileVideoSource():
+class FileVideoSource(VideoSource):
     def __init__(self, file_path):
-        super().__init__()
-        # self.stopped = False
+        super(FileVideoSource, self).__init__()
+        self.__capture: cv2.VideoCapture = None
+        self._fps = 0
         self.__video_path = file_path
         if self.__video_path is None:
             raise ValueError("Video file path is empty")
@@ -20,47 +22,34 @@ class FileVideoSource():
             raise ValueError("Video file is not exist : %s", self.__video_path)
         self._set_capture()
 
-    # def get_frames(self):
-    #     count = 0
-    #     self.stopped = False
-    #     while not self.stopped and self.__capture.isOpened():
-    #         ret, frame = self.__capture.read()
-    #         if ret is False:
-    #             break
-    #
-    #         yield count, frame
-    #         count += 1
-    #     self.stopped = True
-    #     self.__capture.release()
-    #     cv2.destroyAllWindows()
-    #
-    #     try:
-    #         count = 0
-    #         while self.__capture.isOpened():
-    #             ok, frame = self.__capture.read()
-    #             if not ok:
-    #                 break
-    #             yield count, frame
-    #             count += 1
-    #     except Exception as e:
-    #         print(e)
-    #     finally:
-    #         print("video finished..")
-    #         self.__capture.release()
-    #         cv2.destroyAllWindows()
+    def _set_capture(self):
+        if os.path.isfile(self.__video_path) is False:
+            raise ValueError("Video file is not exist")
+        self.__capture = cv2.VideoCapture(self.__video_path)
+        self._fps = self.__capture.get(cv2.CAP_PROP_FPS)
+        self.frame_count = self.__capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        if self.frame_count > 0:
+            self.time_text_suffix = f" / {self.get_time_formatted(self.frame_count / self._fps)}"
+        else:
+            self.time_text_suffix = f" / ???"
+
+    def fps(self):
+        return self._fps
 
     def reset(self):
         self.stop()
         self._set_capture()
 
-    # def stop(self):
-    #     self.stopped = True
-
     # returns ok, frame
     def next(self, skip=0):
         if self.__capture.isOpened():
             if skip > 0:
-                return self.goto(self.get_current_frame_index() + skip)
+                if skip > 15:
+                    return self.goto(self.get_current_frame_index() + skip)
+                else:
+                    for i in range(skip):
+                        ok, frame = self.__capture.read()
+                    return ok, frame
             else:
                 return self.__capture.read()
         else:
@@ -81,7 +70,7 @@ class FileVideoSource():
 
     # returns ok, frame
     def goto(self, frame_index):
-        if frame_index >= 0:
+        if frame_index >= 0 and self.__capture.isOpened():
             self.__capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
             return self.__capture.read()
         else:
@@ -90,22 +79,16 @@ class FileVideoSource():
     def stop(self):
         try:
             self.__capture.release()
+            cv2.destroyAllWindows()
+            self.__capture = None
         except:
             pass
-
-    def _set_capture(self):
-        if os.path.isfile(self.__video_path) is False:
-            raise ValueError("Video file is not exist")
-        self.__capture = cv2.VideoCapture(self.__video_path)
-        self.fps = self.__capture.get(cv2.CAP_PROP_FPS)
-        self.frame_count = self.__capture.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.time_text_suffix = f" / {self.get_time_formatted(self.frame_count / self.fps)}"
 
     def get_current_frame_index(self):
         return int(self.__capture.get(cv2.CAP_PROP_POS_FRAMES) - 1)
 
     def get_time_text(self):
-        cur_sec = self.get_current_frame_index() / self.fps
+        cur_sec = self.get_current_frame_index() / self._fps
         return f"{self.get_time_formatted(cur_sec)}{self.time_text_suffix}"
 
     @staticmethod

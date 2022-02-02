@@ -1,62 +1,56 @@
+import functools
 import os
 import sys
 
-import cv2
 import qdarkstyle
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, QSettings, QSize, QPoint, QEvent
 from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QPushButton
-
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QPushButton, QInputDialog, QProgressDialog
 
 if __name__ == '__main__':
     from player import Player
-    from utils import file_helper
+    from utils import file_helper, image_helper, misc_helper
     from video_player import Ui_MainWindow
-    from dialogs.download_video_dialog import show_download_video_dialog
+    from video_download.video_download_dialog_main import show_youtube_download_dialog
 else:
     from .player import Player
-    from .utils import file_helper
+    from .utils import file_helper, image_helper, misc_helper
     from .video_player import Ui_MainWindow
-    from .dialogs.download_video_dialog import show_download_video_dialog
+    from .video_download.video_download_dialog_main import show_youtube_download_dialog
 
 
+# noinspection PyBroadException
 class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
-    resized = QtCore.pyqtSignal()
 
-    def resizeEvent(self, event):
-        self.resized.emit()
-        super(QMainWindow, self).resizeEvent(event)
-        # QMainWindow.resizeEvent(self, event)
-        # self.check_saved_frames()
-
-    # def on_window_resized(self):
-    #     pass
-
-    def __init__(self, parent_app, parent_window=None, default_font=None):
+    def __init__(self, parent_app, parent_window=None, default_font=None, settings: QSettings = None):
+        self._can_navigate = True
         self.parent_app = parent_app
         self.parent_window = parent_window
+        self.parent_controls_output = self.parent_window is not None
         self.default_font = default_font
         self.freeze_display_once = False
         self.out_prefix = ""
         self.saved_frames = []
         self.btns = None
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        translator = QtCore.QTranslator()
-        qm_file = file_helper.path_join(current_dir, 'video_player-tr.qm')
-        translator.load(qm_file)
-        parent_app.installTranslator(translator)
+        self.current_file = None
 
-        super().__init__(parent=parent_window)
-        # self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        super(VideoPlayerMainWindow, self).__init__(parent=parent_window)
         self.setupUi(self)
 
-        # self.resized.connect(self.on_window_resized)
+        self.settings = QSettings('Orientis', 'video_player') if settings is None else settings
+        self.recentVideos = self.settings.value("recentVideos", []) or []
+        self.updateFileMenu()
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        self._img_play = QtGui.QIcon(file_helper.path_join(current_dir, 'img/play_right.png'))
+        self._img_pause = QtGui.QIcon(file_helper.path_join(current_dir, 'img/pause.png'))
 
         self.pushButton_fast_left.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/fast_play_left.png')))
         self.pushButton_left.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/play_left.png')))
-        self.pushButton_pause.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/pause.png')))
-        self.pushButton_right.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/play_right.png')))
+        self.pushButton_pause.setIcon(self._img_pause)
+        self.pushButton_right.setIcon(self._img_play)
         self.pushButton_fast_right.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/fast_play_right.png')))
         self.pushButton_save.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/snapshot.png')))
         self.pushButton_save_and_edit.setIcon(QtGui.QIcon(file_helper.path_join(current_dir, 'img/editing.png')))
@@ -71,16 +65,24 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_fast_right.clicked.connect(self.clicked_fast_right)
 
         self.actionFile.triggered.connect(self.clicked_file)
+        self.actionCam.triggered.connect(self.clicked_camera)
         self.actionOutput_Dir.triggered.connect(self.clicked_output_dir)
         self.pushButton_output_dir.clicked.connect(self.clicked_output_dir)
 
         self.actionYouTube.triggered.connect(self.clicked_youtube)
+        self.actionYouTube_Download_with_youtube_dl.triggered.connect(self.clicked_youtube_download_youtube_dl)
+        self.actionYouTube_Download_with_yt_dlp.triggered.connect(self.clicked_youtube_download_yt_dlp)
+
+        self.actionURL.triggered.connect(self.clicked_url)
 
         self.actionSave_Current.setShortcut('Ctrl+S')
 
         self.actionSave_Current.triggered.connect(self.save_current_frame)
         self.pushButton_save.clicked.connect(lambda: self.save_current_frame(False))
         self.pushButton_save_and_edit.clicked.connect(lambda: self.save_current_frame(True))
+        self.actionSave_Current_Image_and_Edit.triggered.connect(lambda: self.save_current_frame(True))
+
+        self.actionSave_All_Frames.triggered.connect(self.save_all_frames)
 
         self.actionExit.triggered.connect(self.close_me)
 
@@ -93,29 +95,43 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         self.title = self.windowTitle()
 
         self.player = Player(self, self.video_time_slider, self.speed_dial, self.speed_spin_box)
-        self.player.list_of_dict_signals.connect(self._load_frame)
+        self.player.frame_changed_signal.connect(self.on_frame_changed)
         self.player.video_start_signal.connect(self.on_video_start)
         self.player.video_end_signal.connect(self.on_video_end)
+        self.player.speed_changed.connect(self.on_speed_changed)
         self.player.start()
 
         self.disabled_play_button_exists = True
         self.on_video_start()
         self.just_loaded = 0
-
-        self.settings = QSettings('Orientis', 'video_player')
+        self.auto_size = False
 
         self.output_dir = None
-        self.set_output_dir(self.settings.value("output_dir", ""))
+        if not self.parent_controls_output:
+            self.set_output_dir(self.settings.value("output_dir", ""))
 
-        last_video = self.settings.value("last_video", "")
-        if os.path.isfile(last_video):
-            self.load_video(last_video, change_size=False)
+        try:
+            last_video_type = self.settings.value("last_video_type", "")
+            if last_video_type == "file":
+                last_video_file = self.settings.value("last_video_file", "")
+                if os.path.isfile(last_video_file):
+                    self.load_video_file(last_video_file, change_size=False)
+            # elif last_video_type == "camera":
+            #     self.load_video_camera(change_size=False)
+            # elif last_video_type == "youtube":
+            #     self.load_url(self.settings.value("last_youtube_url"), is_youtube=True)
+            # elif last_video_type == "stream":
+            #     self.load_url(self.settings.value("last_stream_url"), is_youtube=False)
+        except:
+            self.settings.setValue("last_video_type", "")
+            self.settings.setValue("last_video_file", "")
 
-        self.settings.setFallbacksEnabled(False)  # File only, not registry
-        self.resize(self.settings.value("size", QSize(800, 800)))
-        self.move(self.settings.value("pos", QPoint(200, 200)))
+        self.resize(self.settings.value("size", QSize(600 * 1.61803398875, 600)))
+        self.move(self.settings.value("pos", QPoint(200 * 1.61803398875, 200)))
 
-        if self.parent_window is None:
+        if self.parent_controls_output:
+            self.pushButton_output_dir.setVisible(False)
+        else:
             self.pushButton_save_and_edit.setVisible(False)
             self.setStyleSheet(qdarkstyle.load_stylesheet(palette=qdarkstyle.DarkPalette))
             # self.setStyleSheet(qdarkstyle.load_stylesheet(palette=qdarkstyle.LightPalette))
@@ -138,6 +154,33 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
             self.menuHelp.setFont(default_font)
             self.menuProcess.setFont(default_font)
 
+        self._freeze_goto_frame_by_file_name = False
+
+        self._txt_Open_Video_File = self.tr('Open Video File')
+        self._txt_Select_Output_Directory = self.tr('Select Output Directory')
+        self._txt_save_all_frames_title = self.tr('Save All Frames')
+        self._txt_save_all_frames_label_text = self.tr('Set number of frames to be skipped between each frame to be saved. {0}For example, if you set {1}, a single frame for each second will be saved. {0}If you set the value as 0, every frame in the video will be extracted.')
+        self._txt_progress_extracting_frames = self.tr("Extracting frames...")
+        self._txt_progress_abort = self.tr("Abort")
+        self._txt_cannot_load_file = self.tr("<p>Cannot load file!</p>\n<p><b>{}</b></p>")
+        self._txt_warning_title = self.tr("Warning")
+
+    def closeEvent(self, e):
+        self.player.release()
+        self.settings.setValue("size", self.size())
+        self.settings.setValue("pos", self.pos())
+
+    def close_me(self):
+        self.closeEvent(None)
+        self.close()
+
+    def is_closed(self):
+        return not self.player.running()
+
+    def showEvent(self, e):
+        if self.player.get_frame_count() <= 0:
+            self.player.play_right(forced=True)
+
     def eventFilter(self, obj, e):
         def pixelPosToRangeValue(ctrl, pos):
             # ref: https://stackoverflow.com/a/52690011/1266873
@@ -153,7 +196,7 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
             else:
                 sliderLength = sr.height()
                 sliderMin = gr.y()
-                sliderMax = gr.bottom() - sliderLength + 1;
+                sliderMax = gr.bottom() - sliderLength + 1
             pr = pos - sr.center() + sr.topLeft()
             p = pr.x() if ctrl.orientation() == Qt.Horizontal else pr.y()
             return QtWidgets.QStyle.sliderValueFromPosition(ctrl.minimum(), ctrl.maximum(), p - sliderMin,
@@ -162,7 +205,7 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         e_type = e.type()
         update_required = False
         if obj == self.video_time_slider:
-            if e_type == QEvent.MouseButtonRelease:
+            if e_type == QEvent.MouseButtonRelease or e_type == QEvent.MouseButtonPress:
                 val = pixelPosToRangeValue(self.video_time_slider, e.pos())
                 self.video_time_slider.setValue(val)
             if e_type == QEvent.Move:
@@ -211,7 +254,7 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
                         btn.setStyleSheet("background-color: #80808040; border:0px solid #ff0000;")
                         btn.setCursor(QCursor(Qt.PointingHandCursor))
 
-                        btn.clicked.connect(lambda state, index=frame_index: self.player.goto_frame(index))
+                        btn.clicked.connect(lambda state, index=frame_index: self.btn_clicked(index))
                         self.btns.append(btn)
                     except:
                         pass
@@ -219,24 +262,22 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         finally:
             self.update_saved_frame_locations()
             self.video_time_slider.repaint()
+            if self.parent_controls_output:
+                self.parent_window.importDirImages(self.output_dir, load=False)
 
-    def on_mouse_pressed(self, event):
+    def btn_clicked(self, index):
+        self.player.pause()
+        self.player.goto_frame(index)
+        if self.parent_window is not None:
+            fn = self._get_save_file_name(index)
+            if fn and os.path.isfile(fn):
+                self.parent_window.loadFile(fn)
+
+    def on_mouse_pressed(self, _):
         self.update_saved_frame_locations()
         focused_widget = self.focusWidget()
         if focused_widget is not None:
             focused_widget.clearFocus()
-
-    def closeEvent(self, e):
-        self.player.running = False
-        self.settings.setValue("size", self.size())
-        self.settings.setValue("pos", self.pos())
-
-    def close_me(self):
-        self.closeEvent(None)
-        self.close()
-
-    def is_closed(self):
-        return not self.player.running
 
     # def on_comboBox_speed_changed(self, text):
     #     if text == "Normal":
@@ -300,7 +341,10 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         self.player.play_left()
 
     def clicked_pause(self):
-        self.player.pause()
+        if not self._can_navigate:
+            self.player.toggle()
+        else:
+            self.player.pause()
 
     def clicked_right(self):
         self.player.play_right()
@@ -317,7 +361,7 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         self.player.pause()
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.AnyFile)
-        dialog.setWindowTitle('Open Video File')
+        dialog.setWindowTitle(self._txt_Open_Video_File)
         # dialog.setNameFilter('Video Fle (*.mov *.avi *.mp4)')
         # dialog.setFilter(QDir.Files)
         last_dir = self.settings.value("last_dir", "")
@@ -329,18 +373,80 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
             self.settings.setValue("last_dir", dir_name)
             file_names = dialog.selectedFiles()
             if file_names and len(file_names) > 0:
-                self.load_video(file_names[0])
+                self.load_video_file(file_names[0])
 
-    def load_video(self, file_name, change_size=True):
-        if self.player.load_video(file_name):
+    def load_video_file(self, file_name, change_size=True):
+        if self.player.load_video_file(file_name):
+            self.statusbar.clearMessage()
+            self.current_file = file_name
+            self._can_navigate = self.player.get_frame_count() > 0
+            self.update_buttons()
             if change_size:
                 self.just_loaded = 1
-            self.settings.setValue("last_video", file_name)
+            self.settings.setValue("last_video_file", file_name)
+            self.settings.setValue("last_video_type", "file")
             title = "{} - {}".format(self.title, file_name)
             self.setWindowTitle(title)
             _, name, _ = file_helper.get_file_name_extension(file_name)
             self.out_prefix = "{}_".format(name)
             self.check_saved_frames()
+            self.addRecentVideos(filename=file_name)
+        else:
+            return QtWidgets.QMessageBox.warning(self, self._txt_warning_title, self._txt_cannot_load_file.format(file_name))
+
+    def clicked_camera(self):
+        self.load_video_camera()
+
+    def load_video_camera(self, change_size=True):
+        if self.player.load_video_camera():
+            self._can_navigate = False
+            self.update_buttons()
+            if change_size:
+                self.just_loaded = 1
+            self.settings.setValue("last_video_type", "camera")
+            title = "{} - {}".format(self.title, "cam")
+            self.setWindowTitle(title)
+            name = "cam"
+            self.out_prefix = "{}_".format(name)
+            self.check_saved_frames()
+            self.player.play_right(forced=True)
+
+    def load_url(self, url, is_youtube, change_size=True):
+        if self.player.load_url(url, is_youtube=is_youtube):
+            self._can_navigate = False
+            self.update_buttons()
+            if change_size:
+                self.just_loaded = 1
+            if is_youtube:
+                self.settings.setValue("last_video_type", "youtube")
+                self.settings.setValue("last_youtube_url", url)
+            else:
+                self.settings.setValue("last_video_type", "stream")
+                self.settings.setValue("last_stream_url", url)
+            name = "youtube" if is_youtube else "url"
+            title = "{} - {}".format(self.title, name)
+            self.setWindowTitle(title)
+            self.out_prefix = "{}_".format(name)
+            self.check_saved_frames()
+            self.player.play_right(forced=True)
+
+    def update_buttons(self):
+        self.pushButton_fast_left.setVisible(self._can_navigate)
+        self.pushButton_left.setVisible(self._can_navigate)
+        self.pushButton_right.setVisible(self._can_navigate)
+        self.pushButton_fast_right.setVisible(self._can_navigate)
+        self.video_time_slider.setVisible(self._can_navigate)
+        self.speed_dial.setVisible(self._can_navigate)
+        self.speed_spin_box.setVisible(self._can_navigate)
+        if self._can_navigate:
+            self.pushButton_pause.setIcon(self._img_pause)
+
+    def on_speed_changed(self, speed):
+        if not self._can_navigate:
+            if speed == 0:
+                self.pushButton_pause.setIcon(self._img_play)
+            else:
+                self.pushButton_pause.setIcon(self._img_pause)
 
     def clicked_output_dir(self):
         self.select_out_dir()
@@ -349,15 +455,52 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         self.player.pause()
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.DirectoryOnly)
-        dialog.setWindowTitle('Select Output Directory')
-        last_out_dir = self.settings.value("last_out_dir", "")
-        if os.path.isdir(last_out_dir):
-            dialog.setDirectory(last_out_dir)
-        if dialog.exec_():
-            dir_name = dialog.directory().absolutePath()
+        dialog.setWindowTitle(self._txt_Select_Output_Directory)
+        if self.current_file:
+            cur_dir = file_helper.get_parent_dir_path(self.current_file)
+        else:
+            cur_dir = ""
+        last_out_dir = self.settings.value("last_out_dir", cur_dir)
+        dir_name = dialog.getExistingDirectory(self, self._txt_Select_Output_Directory, last_out_dir)
+        if dir_name:
             dir_name = os.path.realpath(dir_name)
             self.settings.setValue("last_out_dir", dir_name)
             self.set_output_dir(dir_name)
+
+    def _get_save_file_name(self, index):
+        if self.output_dir:
+            name = '{prefix}{num:0{width}}'.format(prefix=self.out_prefix, num=index, width=6)
+            return file_helper.path_join(self.output_dir, name + ".png")
+
+    def _get_frame_index_by_file_name(self, file_name):
+        try:
+            if file_name is not None:
+                dir_name, name, extension = file_helper.get_file_name_extension(file_name)
+                if name.startswith(self.out_prefix):
+                    name = name.replace(self.out_prefix, "")
+                    return misc_helper.try_parse_int(name, -1)
+            return -1
+        except:
+            return -1
+
+    def goto_frame_by_file_name(self, file_name):
+        if not self._freeze_goto_frame_by_file_name:
+            index = self._get_frame_index_by_file_name(file_name)
+            if index >= 0:
+                self.player.pause()
+                self.player.goto_frame(index)
+
+    def cursor_wait(self):
+        self.parent_app.setOverrideCursor(Qt.WaitCursor)
+        if self.parent_window is not None:
+            self.parent_window.setCursor(Qt.WaitCursor)
+        self.setCursor(Qt.WaitCursor)
+
+    def cursor_restore(self):
+        self.parent_app.restoreOverrideCursor()
+        if self.parent_window is not None:
+            self.parent_window.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.ArrowCursor)
 
     def save_current_frame(self, edit):
         play_speed = 0
@@ -367,19 +510,14 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
         if self.output_dir is None or not os.path.isdir(self.output_dir):
             self.select_out_dir()
         try:
-            self.parent_app.setOverrideCursor(Qt.WaitCursor)
-            if edit:
-                self.parent_window.setCursor(Qt.WaitCursor)
-            self.setCursor(Qt.WaitCursor)
+            self.cursor_wait()
             if self.output_dir is not None and os.path.isdir(self.output_dir):
                 frame, index = self.player.get_current_frame_and_index()
                 if frame is not None:
-                    name = '{prefix}{num:0{width}}'.format(prefix=self.out_prefix, num=index, width=6)
-                    fn = file_helper.path_join(self.output_dir, name + ".png")
-                    cv2.imwrite(fn, frame)
+                    fn = self._get_save_file_name(index)
+                    image_helper.write(frame, fn, save_thumbnail=True)
                     if edit:
-                        # if self.parent_window.lastOpenDir is None or not os.path.isdir(self.parent_window.lastOpenDir):
-                        self.parent_window.importDirImages(self.output_dir)
+                        self.parent_window.importDirImages(self.output_dir, load=False)
                         self.parent_window.loadFile(fn)
                         self.parent_window.hide_video()
                         if play_speed < 0:
@@ -392,37 +530,38 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
                             self.player.play_previous_frame()
                         else:
                             self.player.play_next_frame()
+                    elif self.parent_window is not None:
+                        old_val = self._freeze_goto_frame_by_file_name
+                        self._freeze_goto_frame_by_file_name = True
+                        try:
+                            self.parent_window.loadFile(fn)
+                        finally:
+                            self._freeze_goto_frame_by_file_name = old_val
         finally:
-            self.parent_app.restoreOverrideCursor()
-            self.setCursor(Qt.ArrowCursor)
-            if edit:
-                self.parent_window.setCursor(Qt.ArrowCursor)
             self.check_saved_frames()
+            self.cursor_restore()
 
-    def _load_frame(self, frame, current_frame_index, time_text):
+    def on_frame_changed(self, frame, current_frame_index, time_text):
         if self.disabled_play_button_exists:
             self.pushButton_fast_left.setDisabled(False)
             self.pushButton_left.setDisabled(False)
             self.pushButton_right.setDisabled(False)
             self.pushButton_fast_right.setDisabled(False)
+            self.disabled_play_button_exists = False
 
         if self.freeze_display_once:
             self.freeze_display_once = False
             return
         else:
+            h0, w0 = frame.shape[:2]
+            self.statusbar.showMessage("{} x {} - FPS: {}".format(w0, h0, int(round(self.player.fps()))))
+
             w, h = self.image_view.width(), self.image_view.height()
-            if self.just_loaded == 1:
-                self.just_loaded = 2
-                w, h = frame.shape[1], frame.shape[0]
-                self.image_view.setMinimumSize(w, h)
-            elif self.just_loaded == 2:
-                self.just_loaded = 0
-                self.image_view.setMinimumSize(1, 1)
+            frame = image_helper.resize_keep_aspect_ratio(frame, w, h)
 
             h1, w1 = frame.shape[:2]
-            image = QtGui.QImage(frame.data, w1, h1, QtGui.QImage.Format_BGR888)
+            image = QtGui.QImage(frame.data, w1, h1, 3 * w1, QtGui.QImage.Format_BGR888)
             pixmap = QtGui.QPixmap.fromImage(image)
-            pixmap = pixmap.scaled(w, h, QtCore.Qt.KeepAspectRatio)
             self.image_view.setPixmap(pixmap)
 
             self.video_time_slider.setValue(current_frame_index)
@@ -441,24 +580,127 @@ class VideoPlayerMainWindow(QMainWindow, Ui_MainWindow):
     def set_output_dir(self, dir_name):
         if dir_name is not None and os.path.isdir(dir_name):
             self.output_dir = dir_name
-            self.settings.setValue("output_dir", dir_name)
+            if not self.parent_controls_output:
+                self.settings.setValue("output_dir", dir_name)
             self.check_saved_frames()
+            if self.parent_window is not None:
+                self.parent_window.importDirImages(self.output_dir, load=False)
         else:
             self.output_dir = None
 
-    # region youtube
+    def addRecentVideos(self, filename):
+        if filename in self.recentVideos:
+            self.recentVideos.remove(filename)
+        elif len(self.recentVideos) >= 8:
+            self.recentVideos.pop()
+        self.recentVideos.insert(0, filename)
+        self.settings.setValue("recentVideos", self.recentVideos)
+        self.updateFileMenu()
+
+    def updateFileMenu(self):
+        menu = self.menuRecent_Files
+        menu.clear()
+        files = [f for f in self.recentVideos if os.path.exists(f)]
+        for i, f in enumerate(files):
+            action = QtWidgets.QAction("&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self)
+            action.triggered.connect(functools.partial(self.load_video_file, f))
+            menu.addAction(action)
+
+    # region youtube - url
+    def clicked_url(self):
+        self._clicked_stream(url=self.settings.value("last_stream_url"), title="Stream", label_text="URL", is_youtube=False)
+
     def clicked_youtube(self):
+        self._clicked_stream(url=self.settings.value("last_youtube_url"), title="YouTube", label_text="URL", is_youtube=True)
+
+    def _clicked_stream(self, url, title, label_text, is_youtube):
+        dlg = QInputDialog(self)
+        dlg.setInputMode(QInputDialog.TextInput)
+        dlg.setWindowTitle(title)
+        dlg.setLabelText(label_text)
+        dlg.setTextValue(url)
+        dlg.resize(600, 100)
+        dlg.setMaximumSize(5500, 100)
+        ok = dlg.exec_()
+        if ok:
+            url = dlg.textValue()
+            if url:
+                self.load_url(url, is_youtube=is_youtube)
+
+    def clicked_youtube_download_youtube_dl(self):
+        self._clicked_youtube_download("youtube_dl")
+
+    def clicked_youtube_download_yt_dlp(self):
+        self._clicked_youtube_download("yt_dlp")
+
+    def _clicked_youtube_download(self, style: str):
         self.player.pause()
-        res = show_download_video_dialog(self.parent_app, self.parent_window, self.default_font)
-        print(res)
+        url = self.settings.value("youtube_url")
+        outdir = self.settings.value("youtube_outdir")
+        file_name = self.settings.value("youtube_file_name")
+        ok, url, outdir, file_name, downloaded_file = show_youtube_download_dialog(self.parent_app, self, self.default_font, url=url, outdir=outdir, file_name=file_name, style=style)
+        self.settings.setValue("youtube_url", url)
+        self.settings.setValue("youtube_outdir", outdir)
+        self.settings.setValue("youtube_file_name", file_name)
+        if ok:
+            self.load_video_file(downloaded_file)
+
     # endregion
 
+    def save_all_frames(self):
+        self.player.pause()
+        dlg = QInputDialog(self)
+        dlg.setInputMode(QInputDialog.TextInput)
+        dlg.setWindowTitle(self._txt_save_all_frames_title)
+        fps = int(round(self.player.fps()))
+        txt = self._txt_save_all_frames_label_text.format(os.linesep, str(fps))
+        dlg.setLabelText(txt)
+        dlg.setIntMinimum(0)
+        dlg.setIntMaximum(999999999)
+        dlg.setIntValue(fps)
+        dlg.setIntStep(fps)
+        dlg.resize(300, 100)
+        dlg.setMaximumSize(5500, 100)
+        dlg.setWhatsThis(txt)
+        ok = dlg.exec_()
+        if ok:
+            step = dlg.intValue()
+            if step >= 0:
+                if self.output_dir is None or not os.path.isdir(self.output_dir):
+                    self.select_out_dir()
+                self._save_every_frame(step)
 
-def show_video_player(parent_app, parent_window, output_dir, default_font):
-    win = VideoPlayerMainWindow(parent_app=parent_app, parent_window=parent_window, default_font=default_font)
+    def _save_every_frame(self, step):
+        try:
+            num = self.player.get_frame_count()
+            if step > 0:
+                num = int(num / step)
+            progress = QProgressDialog(self._txt_progress_extracting_frames, self._txt_progress_abort, 0, num, self)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.setMinimumWidth(460)
+            i = 0
+            for frame, index in self.player.enumerate_frames(start_index=0, step=step):
+                progress.setValue(i)
+                i += 1
+                if progress.wasCanceled():
+                    break
+                image_helper.write(frame, self._get_save_file_name(index), save_thumbnail=True)
+            progress.setValue(num)
+        finally:
+            self.check_saved_frames()
+            self.cursor_restore()
+
+
+def create_video_player_window(parent_app, parent_window, output_dir, default_font, settings) -> VideoPlayerMainWindow:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    translator = QtCore.QTranslator()
+    qm_file = file_helper.path_join(current_dir, 'video_player-tr.qm')
+    translator.load(qm_file)
+    parent_app.installTranslator(translator)
+
+    win = VideoPlayerMainWindow(parent_app=parent_app, parent_window=parent_window, default_font=default_font, settings=settings)
     # win.setWindowModality(Qt.WindowModal)
     win.set_output_dir(output_dir)
-    win.show()
     return win
 
 
@@ -470,6 +712,16 @@ if __name__ == "__main__":
         QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
     app1 = QtWidgets.QApplication(sys.argv)
-    win1 = VideoPlayerMainWindow(parent_app=app1, parent_window=None)
+    win1 = create_video_player_window(app1, None, "", None, None)
+
+    # # https://stackoverflow.com/a/56550014/1266873
+    # win1.setWindowFlags(win1.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+    # win1.show()
+    # win1.setWindowFlags(win1.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+    # win1.show()
+
+    win1.raise_()
     win1.show()
+    win1.activateWindow()
+
     sys.exit(app1.exec_())

@@ -2,21 +2,6 @@ import numpy as np
 import cv2
 
 
-# try:
-#     from picamera import PiCamera
-# except ImportError:
-#     print("picamera library not found - installing...")
-#     if NDUUtility.install_package("picamera"):
-#         import picamera
-#
-# try:
-#     from picamera.array import PiRGBArray
-# except ImportError:
-#     print("picamera library not found - installing...")
-#     if NDUUtility.install_package("picamera[array]"):
-#         import picamera.array
-
-
 class PiCameraVideoSource(VideoSource):
     def __init__(self, frame_width=640, frame_height=480, framerate=32, rotation=180, show_preview=False):
         super().__init__()

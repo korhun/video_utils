@@ -1,6 +1,10 @@
 import math
+import os
+
 import cv2
 import base64
+
+import numpy
 import numpy as np
 
 
@@ -232,9 +236,15 @@ def select_points(frame, window_name, color=(0, 255, 255), radius=8, thickness=4
         cv2.destroyWindow(window_name)
 
 
-def put_text(img, text_, center, color=None, font_scale=0.5, thickness=1, back_color=None, replace_tur_chars=True):
-    if replace_tur_chars:
-        text_ = NDUUtility.debug_replace_tur_chars(text_)
+def replace_non_ascii_chars(txt):
+    return txt \
+        .replace("İ", "I").replace("Ğ", "G").replace("Ü", "U").replace("Ş", "S").replace("Ç", "C").replace("Ö", "O").replace("Â", "A") \
+        .replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ç", "c").replace("ö", "o").replace("â", "a")
+
+
+def put_text(img, text_, center, color=None, font_scale=0.5, thickness=1, back_color=None, replace_non_ascii=True):
+    if replace_non_ascii:
+        text_ = replace_non_ascii_chars(text_)
     if back_color is None:
         back_color = [0, 0, 0]
     if color is None:
@@ -343,3 +353,47 @@ def change_brightness(img, value):
 
 def mirror(mat):
     return cv2.flip(mat, 1)
+
+
+def get_thumbnail_fn(image_file_name, create_dir_if_not_existed):
+    from . import file_helper
+    dir_name, name, extension = file_helper.get_file_name_extension(image_file_name)
+    thumbs_dir = file_helper.path_join(dir_name, ".thumbs")
+    if create_dir_if_not_existed and not os.path.exists(thumbs_dir):
+        os.makedirs(thumbs_dir)
+    return file_helper.path_join(thumbs_dir, name + ".thumb" + extension)
+
+
+def _write(mat, file_name):
+    # cv2.imwrite(fn, frame)
+    is_success, im_buf_arr = cv2.imencode(".png", mat)
+    im_buf_arr.tofile(file_name)
+    im_buf_arr = None
+
+
+def write(mat, file_name, save_thumbnail=False, thumbnail_size=128):
+    _write(mat, file_name)
+    if save_thumbnail:
+        fn_thumb = get_thumbnail_fn(file_name, True)
+        mat_thumb = get_thumb(mat, thumbnail_size)
+        _write(mat_thumb, fn_thumb)
+
+
+def get_thumb(mat, thumbnail_size=128):
+    return resize_if_larger(mat, thumbnail_size)
+
+
+def read(file_name):
+    # cv2.imread
+    stream = open(file_name, "rb")
+    bytes = bytearray(stream.read())
+    numpyarray = numpy.asarray(bytes, dtype=numpy.uint8)
+    return cv2.imdecode(numpyarray, cv2.IMREAD_UNCHANGED)
+
+
+def read_thumb(file_name):
+    fn_thumb = get_thumbnail_fn(file_name, False)
+    if os.path.isfile(fn_thumb):
+        return read(fn_thumb)
+    else:
+        return read(file_name)

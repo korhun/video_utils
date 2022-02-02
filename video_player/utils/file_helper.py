@@ -111,6 +111,8 @@ def wildcard(txt, pattern, case_insensitive=True):
     if txt == pattern:
         return True
     else:
+        txt = txt.replace("[", "_").replace("]", "-")
+        pattern = pattern.replace("[", "_").replace("]", "-")
         return fnmatch(txt.lower(), pattern.lower()) if case_insensitive else fnmatch(txt, pattern)
 
 
@@ -135,3 +137,15 @@ def equals_case_insensitive(string1, string2):
 
 def join(list_of_string, separator):
     return separator.join(list_of_string)
+
+
+def file_exists(file_full_name: str) -> bool:
+    if file_full_name:
+        return os.path.isfile(file_full_name)
+    return False
+
+
+def dir_exists(dir_name: str) -> bool:
+    if dir_name:
+        return os.path.isdir(dir_name)
+    return False

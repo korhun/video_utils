@@ -3,8 +3,6 @@ import time
 
 import cv2
 
-from ndu_gate_camera.api.video_source import VideoSource, log
-
 
 class IPCameraVideoSource(VideoSource):
     def __init__(self, source_config):
@@ -64,4 +62,3 @@ class IPCameraVideoSource(VideoSource):
             self.__capture = cv2.VideoCapture(self.__video_url)
         except Exception as exp:
             log.error(exp)
-

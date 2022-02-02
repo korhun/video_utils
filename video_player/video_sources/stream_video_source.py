@@ -1,6 +1,5 @@
 import time
-
-import cv2
+from vidgear.gears import CamGear
 
 if __package__ is None or __package__ == '':
     from video_source import VideoSource
@@ -8,17 +7,22 @@ else:
     from .video_source import VideoSource
 
 
-class CameraVideoSource(VideoSource):
-    def __init__(self, mirror=True):
-        self._mirror = mirror
+class StreamVideoSource(VideoSource):
+    def __init__(self, url, youtube_mode):
+        self._youtube_mode = youtube_mode
         self._fps = 0
         self._current_frame_index = 1
-        super(CameraVideoSource, self).__init__()
+        super(StreamVideoSource, self).__init__()
+
+        self._url = url
+        if self._url is None:
+            raise ValueError("Video url is empty")
         self._set_capture()
 
     def _set_capture(self):
-        self._capture = self._find_video_capture()
-        self._fps = self._capture.get(cv2.CAP_PROP_FPS)
+        self._stream = CamGear(source=self._url, stream_mode=self._youtube_mode, time_delay=1, logging=False)
+        self._stream.start()
+        self._fps = self._stream.framerate
 
     def fps(self):
         return self._fps
@@ -29,10 +33,9 @@ class CameraVideoSource(VideoSource):
 
     # returns ok, frame
     def next(self, skip=0):
-        ok, frame = self._capture.read()
+        frame = self._stream.read()
+        ok = frame is not None
         self._current_frame_index += 1
-        if ok and self._mirror:
-            frame = cv2.flip(frame, 1)
         return ok, frame
 
     # returns ok, frame
@@ -45,7 +48,7 @@ class CameraVideoSource(VideoSource):
 
     def stop(self):
         try:
-            self._capture.release()
+            self._stream.stop()
         except:
             pass
 
@@ -64,18 +67,3 @@ class CameraVideoSource(VideoSource):
         else:
             return '{}.{}'.format(time.strftime('%H:%M:%S', time.gmtime(s)), "{0:02d}".format(int(ms / 10)))
 
-    @staticmethod
-    def _find_video_capture():
-        index = -1
-        cap = cv2.VideoCapture(index)
-        r, fr = cap.read()
-        while fr is None:
-            index += 1
-            if index > 100:
-                raise Exception('Cannot capture camera video')
-            try:
-                cap = cv2.VideoCapture(index)
-                r, fr = cap.read()
-            except:
-                fr = None
-        return cap

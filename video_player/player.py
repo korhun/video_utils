@@ -1,26 +1,37 @@
 import math
 import time
+from typing import Optional
 
-from PyQt5.QtCore import Qt, QDir, pyqtSignal, QThread
+from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtWidgets import QSlider
 
 if __name__ == 'player':
+    from video_sources.video_source import VideoSource
     from video_sources.file_video_source import FileVideoSource
+    from video_sources.camera_video_source import CameraVideoSource
+    from video_sources.stream_video_source import StreamVideoSource
 else:
+    from .video_sources.video_source import VideoSource
     from .video_sources.file_video_source import FileVideoSource
+    from .video_sources.camera_video_source import CameraVideoSource
+    from .video_sources.stream_video_source import StreamVideoSource
 
 
+# noinspection PyBroadException
 class Player(QThread):
-    list_of_dict_signals = pyqtSignal(object, int, str)
+    frame_changed_signal = pyqtSignal(object, int, str)
     video_start_signal = pyqtSignal()
     video_end_signal = pyqtSignal()
+    speed_changed = pyqtSignal(int)
 
-    def __init__(self, parent, time_slider, speed_dial, speed_spin_box):
+    def __init__(self, parent, time_slider: QSlider, speed_dial, speed_spin_box):
         QThread.__init__(self, parent)
-        self.running = False
+        self._parent = parent
+        self._running = False
         self.time_slider = time_slider
         self.speed_dial = speed_dial
         self.speed_spin_box = speed_spin_box
-        self.video_source = None
+        self.video_source: Optional[VideoSource] = None
         self.goto_frame_index = -1
 
         self.speed_spin_box.setKeyboardTracking(False)
@@ -51,13 +62,18 @@ class Player(QThread):
         self._set_speed_is_active = False
         self._slider_last_speed = 0
         self._frame_count = 0
+        self._run_counter = 0
+        self._slider_ready = False
+        self._fps = 0
+        self._fps_div = 0
 
     # def time_slider_moved(self):
     #     val = self.sender().value()
     #     if self.current_frame_index != val:
-    #         self.goto_frame_index = val
+    #         self.goto_frame(val)
 
     def time_slider_pressed(self):
+        self._slider_ready = True
         self._slider_last_speed = self._speed
         self.pause()
 
@@ -66,8 +82,8 @@ class Player(QThread):
 
     def time_slider_value_changed(self):
         val = self.sender().value()
-        if self.current_frame_index != val:
-            self.goto_frame_index = val
+        if self._slider_ready and self.current_frame_index != val:
+            self.goto_frame(val)
 
     def speed_spin_box_value_changed(self):
         if not self._set_speed_is_active:
@@ -88,6 +104,7 @@ class Player(QThread):
     def speed(self):
         return self._speed
 
+    # noinspection PyUnresolvedReferences
     def set_speed(self, speed):
         if not self._set_speed_is_active:
             try:
@@ -102,6 +119,7 @@ class Player(QThread):
                         self.speed_dial.setValue(slider_val)
                     else:
                         self.speed_dial.setValue(-slider_val)
+                    self.speed_changed.emit(self._speed)
             finally:
                 self._set_speed_is_active = False
                 self.speed_spin_box.setValue(self._speed)
@@ -109,22 +127,98 @@ class Player(QThread):
     def get_frame_count(self):
         return self._frame_count
 
-    def load_video(self, file_name):
-        try:
-            self.video_source = FileVideoSource(file_name)
-            self._frame_count = self.video_source.frame_count
-            self.time_slider.setMaximum(self._frame_count)
-            self.time_slider.setTickInterval(1)
-            self.time_slider.setValue(self.video_source.get_current_frame_index())
+    def _update_fps(self):
+        self._fps = self.video_source.fps()
+        if self._fps <= 0:
+            self._fps = 24
+        self._fps_div = 1.0 / self._fps
 
+    def load_video_file(self, file_name):
+        try:
+            self._parent.cursor_wait()
+            self.stop()
+            self.video_source = FileVideoSource(file_name)
+            self._update_fps()
+            self._frame_count = self.video_source.frame_count
+            if self._frame_count > 0:
+                self.time_slider.setVisible(True)
+                self.time_slider.setMaximum(self._frame_count)
+                self.time_slider.setTickInterval(1)
+                self.time_slider.setValue(self.video_source.get_current_frame_index())
+            else:
+                self.time_slider.setVisible(False)
+
+            time.sleep(0.1)
             ok, frame = self.video_source.next(0)
             if ok:
-                self.list_of_dict_signals.emit(frame, self.video_source.get_current_frame_index(), self.video_source.get_time_text())
+                self.goto_frame(0)
                 self.play_right(True)
                 return True
         except:
             self.pause()
+        finally:
+            self._parent.cursor_restore()
         return False
+
+    def load_video_camera(self):
+        try:
+            self._parent.cursor_wait()
+            self.stop()
+            self.video_source = CameraVideoSource()
+            self._frame_count = -1
+            self._update_fps()
+            self.time_slider.setVisible(False)
+            ok, frame = self.video_source.next(0)
+            if ok:
+                self.goto_frame(0)
+                self.play_right(True)
+                return True
+        except:
+            self.pause()
+        finally:
+            self._parent.cursor_restore()
+        return False
+
+    def load_url(self, url, is_youtube):
+        try:
+            self._parent.cursor_wait()
+            self.stop()
+            self.video_source = StreamVideoSource(url, is_youtube)
+            self._frame_count = -1
+            self._update_fps()
+            self.time_slider.setVisible(False)
+            ok, frame = self.video_source.next(0)
+            if ok:
+                self.goto_frame(0)
+                self.play_right(True)
+                return True
+        except:
+            self.pause()
+        finally:
+            self._parent.cursor_restore()
+        return False
+
+    def stop(self):
+        c = self._run_counter + 1
+        self.pause()
+        time.sleep(0.1)
+        while c >= self._run_counter and self._running:
+            self.pause()
+            time.sleep(0.1)
+        if self.video_source is not None:
+            vs = self.video_source
+            self.video_source = None
+            time.sleep(0.1)
+            vs.stop()
+        self._slider_ready = False
+        self.goto_frame_index = -1
+
+    def release(self):
+        self.stop()
+        self._running = False
+
+    def running(self):
+        return self._running
 
     def goto_frame(self, frame_index):
         self.goto_frame_index = frame_index
@@ -172,45 +266,81 @@ class Player(QThread):
     def play_right_fast(self, forced=False):
         self._play(forced, 5)
 
-    def _emit(self, frame):
-        self.current_frame = frame
-        self.current_frame_index = self.video_source.get_current_frame_index()
-        self.list_of_dict_signals.emit(frame, self.current_frame_index, self.video_source.get_time_text())
+    # noinspection PyUnresolvedReferences
+    def _emit_frame(self, frame):
+        if self.goto_frame_index < 0:
+            self.current_frame = frame
+            self.current_frame_index = self.video_source.get_current_frame_index()
+            time_text = self.video_source.get_time_text()
+            if self.goto_frame_index < 0:
+                self.frame_changed_signal.emit(frame, self.current_frame_index, time_text)
+                time.sleep(0.01)
+                self._slider_ready = True
 
+    # noinspection PyUnresolvedReferences
     def run(self):
         prev = 0
-        self.running = True
-        while self.running:
+        self._running = True
+        while self._running:
             try:
                 if self.goto_frame_index >= 0 and self.goto_frame_index != self.current_frame_index:
-                    ok, frame = self.video_source.goto(self.goto_frame_index)
-                    if ok:
-                        self._emit(frame)
-                    self.goto_frame_index = -1
-                elif self._speed != 0:
-                    abs_speed = abs(self._speed)
-                    time_elapsed = time.time() - prev
-                    if self.shift_pressed:
-                        time_elapsed *= 0.1
-                    if abs_speed != 1:
-                        time_elapsed *= abs_speed
-                    if time_elapsed > 1. / self.video_source.fps:
-                        prev = time.time()
-                        skip = max(1, int(abs_speed))
-                        ok, frame = self.video_source.previous(skip) if self._speed < 0 else self.video_source.next(skip)
+                    goto_index = self.goto_frame_index
+                    ok, frame = self.video_source.goto(goto_index)
+                    if goto_index == self.goto_frame_index:
+                        self.goto_frame_index = -1
                         if ok:
-                            self._emit(frame)
-                        else:
-                            if self._speed < 0:
-                                self.video_start_signal.emit()
-                            else:
-                                self.video_end_signal.emit()
-                            self.pause()
-
+                            self._emit_frame(frame)
                 else:
-                    time.sleep(0.1)
+                    self.goto_frame_index = -1
+                    if self._speed != 0:
+                        abs_speed = abs(self._speed)
+                        time_elapsed = time.time() - prev
+                        if self.shift_pressed:
+                            time_elapsed *= 0.1
+                        if abs_speed != 1:
+                            time_elapsed *= abs_speed
+                        if time_elapsed > self._fps_div:
+                            prev = time.time()
+                            if self._frame_count <= 0:
+                                ok, frame = self.video_source.next(0)
+                                if frame is not None:
+                                    self._emit_frame(frame)
+                            else:
+                                # skip = max(1, int(abs_speed))
+                                skip = 0 if abs_speed < 2.0 else int(abs_speed)
+                                ok, frame = self.video_source.previous(skip) if self._speed < 0 else self.video_source.next(skip)
+                                if ok:
+                                    self._emit_frame(frame)
+                                else:
+                                    if self._speed < 0:
+                                        self.video_start_signal.emit()
+                                    else:
+                                        self.video_end_signal.emit()
+                                    self.pause()
+                    else:
+                        time.sleep(0.1)
             except:
                 self.pause()
+            finally:
+                self._run_counter += 1
 
     def get_current_frame_and_index(self):
         return self.current_frame, self.current_frame_index
+
+    def get_current_time_text(self):
+        return self.video_source.get_time_text()
+
+    def enumerate_frames(self, start_index=0, step=0) -> (object, int):
+        while self._speed != 0:
+            self.pause()
+        if step < 0:
+            step = 0
+        ok, frame = self.video_source.goto(start_index)
+        while ok:
+            self.current_frame = frame
+            self.current_frame_index = self.video_source.get_current_frame_index()
+            yield self.current_frame, self.current_frame_index
+            ok, frame = self.video_source.next(step)
+
+    def fps(self):
+        return self._fps

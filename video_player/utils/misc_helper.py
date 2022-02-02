@@ -1,5 +1,5 @@
 import sys
-from inspect import getmembers, isclass, isfunction
+from inspect import getmembers, isfunction
 
 
 def is_debug_mode():
@@ -15,3 +15,10 @@ def get_methods(cls_):
 def has_method(cls_, name):
     methods = getmembers(cls_, isfunction)
     return name in dict(methods)
+
+
+def try_parse_int(txt, default_value=None):
+    try:
+        return int(txt, 10)
+    except ValueError:
+        return default_value
